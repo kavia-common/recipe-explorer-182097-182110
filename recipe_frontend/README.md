@@ -1,82 +1,81 @@
-# Lightweight React Template for KAVIA
+# Recipe Explorer Frontend
 
-This project provides a minimal React template with a clean, modern UI and minimal dependencies.
+A modern React app to browse, search, and manage recipes with Supabase auth and favorites.
+
+## Quick Start
+
+1. Install dependencies:
+   - npm install
+
+2. Create a .env file at recipe_frontend with:
+   - See .env.example for required variables
+   - REACT_APP_SUPABASE_URL=
+   - REACT_APP_SUPABASE_KEY=
+   - REACT_APP_SITE_URL=http://localhost:3000
+
+3. Start the app:
+   - npm start
+   - Open http://localhost:3000
+
+If Supabase env vars are missing, a red banner will appear guiding you to configure them.
+
+## Supabase Setup Summary
+
+Tables expected:
+- recipes
+  - id: uuid (primary key, default uuid_generate_v4())
+  - title: text
+  - image_url: text
+  - cuisine: text
+  - tags: text[] (array)
+  - ingredients: text[] (array)
+  - instructions: text[] (array)
+  - created_at: timestamp with time zone (default now())
+
+- profiles
+  - id: uuid (primary key) references auth.users
+  - username: text
+  - avatar_url: text
+  - updated_at: timestamp with time zone
+
+- favorites
+  - user_id: uuid references auth.users
+  - recipe_id: uuid references recipes.id
+  - unique constraint: (user_id, recipe_id)
+
+Policies (suggested):
+- profiles: user can read all, update own row (id = auth.uid())
+- favorites: user can select/insert/delete where user_id = auth.uid()
+- recipes: read-only for anon/auth (as desired)
+
+Auth:
+- OTP email sign-in using Supabase Auth
+- Redirect uses REACT_APP_SITE_URL
 
 ## Features
 
-- **Lightweight**: No heavy UI frameworks - uses only vanilla CSS and React
-- **Modern UI**: Clean, responsive design with KAVIA brand styling
-- **Fast**: Minimal dependencies for quick loading times
-- **Simple**: Easy to understand and modify
+- Ocean Professional theme (blue/amber accents)
+- Email OTP login, profile editing (username, avatar url)
+- Search with debounce, filters (cuisine, tags), sort options
+- Recipe details page with ingredients and instructions
+- Favorites with optimistic toggling and sidebar panel
+- Responsive layout with sticky navbar and sidebar
 
-## Getting Started
+## Scripts
 
-In the project directory, you can run:
+- npm start - Start dev server
+- npm test - Run tests
+- npm run build - Production build
 
-### `npm start`
+## Environment Variables
 
-Runs the app in development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- REACT_APP_SUPABASE_URL: Supabase Project URL
+- REACT_APP_SUPABASE_KEY: Supabase anon public key
+- REACT_APP_SITE_URL: Site URL for auth callbacks (http://localhost:3000 in dev)
 
-### `npm test`
+Tip: Copy .env.example to .env and fill in values.
 
-Launches the test runner in interactive watch mode.
+## Notes
 
-### `npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-## Customization
-
-### Colors
-
-The main brand colors are defined as CSS variables in `src/App.css`:
-
-```css
-:root {
-  --kavia-orange: #E87A41;
-  --kavia-dark: #1A1A1A;
-  --text-color: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.7);
-  --border-color: rgba(255, 255, 255, 0.1);
-}
-```
-
-### Components
-
-This template uses pure HTML/CSS components instead of a UI framework. You can find component styles in `src/App.css`. 
-
-Common components include:
-- Buttons (`.btn`, `.btn-large`)
-- Container (`.container`)
-- Navigation (`.navbar`)
-- Typography (`.title`, `.subtitle`, `.description`)
-
-## Learn More
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- When DB is empty, Home page gracefully shows helpful message.
+- Favorites rely on RLS policies in Supabase to constrain operations to the current user.
