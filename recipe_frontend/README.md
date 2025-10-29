@@ -19,38 +19,76 @@ A modern React app to browse, search, and manage recipes with Supabase auth and 
 
 If Supabase env vars are missing, a red banner will appear guiding you to configure them.
 
-## Supabase Setup Summary
+## Supabase Setup (Schema + Policies)
 
-Tables expected:
-- recipes
-  - id: uuid (primary key, default uuid_generate_v4())
-  - title: text
-  - image_url: text
-  - cuisine: text
-  - tags: text[] (array)
-  - ingredients: text[] (array)
-  - instructions: text[] (array)
-  - created_at: timestamp with time zone (default now())
+Use the SQL below in Supabase SQL Editor (or see assets/supabase.md for a copy):
 
-- profiles
-  - id: uuid (primary key) references auth.users
-  - username: text
-  - avatar_url: text
-  - updated_at: timestamp with time zone
+- Creates tables: recipes, profiles, favorites
+- Enables RLS and defines policies:
+  - recipes: public read
+  - profiles: read all; insert/update own row (id = auth.uid())
+  - favorites: select/insert/delete only when user_id = auth.uid()
 
-- favorites
-  - user_id: uuid references auth.users
-  - recipe_id: uuid references recipes.id
-  - unique constraint: (user_id, recipe_id)
+-- Begin SQL (run in Supabase) --
+create extension if not exists pgcrypto;
 
-Policies (suggested):
-- profiles: user can read all, update own row (id = auth.uid())
-- favorites: user can select/insert/delete where user_id = auth.uid()
-- recipes: read-only for anon/auth (as desired)
+create table if not exists public.recipes (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  image_url text,
+  cuisine text,
+  tags text[],
+  ingredients text[],
+  instructions text[],
+  created_at timestamptz default now() not null
+);
 
-Auth:
-- OTP email sign-in using Supabase Auth
-- Redirect uses REACT_APP_SITE_URL
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  username text,
+  avatar_url text,
+  updated_at timestamptz
+);
+
+create table if not exists public.favorites (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  recipe_id uuid not null references public.recipes(id) on delete cascade,
+  created_at timestamptz default now() not null,
+  primary key (user_id, recipe_id)
+);
+
+alter table public.recipes enable row level security;
+alter table public.profiles enable row level security;
+alter table public.favorites enable row level security;
+
+create policy recipes_read_all on public.recipes
+  for select using (true);
+
+create policy profiles_read_all on public.profiles
+  for select using (true);
+
+create policy profiles_insert_own on public.profiles
+  for insert with check (auth.uid() = id);
+
+create policy profiles_update_own on public.profiles
+  for update using (auth.uid() = id) with check (auth.uid() = id);
+
+create policy favorites_select_own on public.favorites
+  for select using (auth.uid() = user_id);
+
+create policy favorites_insert_own on public.favorites
+  for insert with check (auth.uid() = user_id);
+
+create policy favorites_delete_own on public.favorites
+  for delete using (auth.uid() = user_id);
+-- End SQL --
+
+Post-setup checklist:
+- Authentication > URL Configuration:
+  - Site URL: http://localhost:3000 (dev) or your production domain
+  - Redirect URLs: add http://localhost:3000/** and your production domain /**
+- Providers > Email: Ensure Email OTP is enabled
+- Optional: Seed a few recipes to test favorites and browsing.
 
 ## Features
 
