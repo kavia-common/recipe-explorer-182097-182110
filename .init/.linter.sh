@@ -1,0 +1,8 @@
+#!/bin/bash
+cd /home/kavia/workspace/code-generation/recipe-explorer-182097-182110/recipe_frontend
+npm run build
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
+   exit 1
+fi
+
